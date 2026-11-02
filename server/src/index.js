@@ -55,14 +55,30 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ message: 'Something went wrong on our side. Please try again.' });
 });
 
+async function connectWithRetry() {
+  try {
+    await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 10000 });
+    console.log(`MongoDB connected: ${config.mongoUri.replace(/:([^:@]+)@/, ':****@')}`);
+  } catch (err) {
+    console.error('MongoDB connection failed:', err.message);
+    console.log('Retrying MongoDB connection in 5 seconds...');
+    setTimeout(connectWithRetry, 5000);
+  }
+}
+
 async function main() {
-  await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 8000 });
-  console.log(`MongoDB connected: ${config.mongoUri}`);
   const server = http.createServer(app);
   initSocket(server, config.clientOrigins);
 
+  server.listen(config.port, () => {
+    console.log(`QueueFlow API listening on http://localhost:${config.port}`);
+  });
+
+  await connectWithRetry();
+
   let sweeping = false;
   setInterval(async () => {
+    if (mongoose.connection.readyState !== 1) return;
     if (sweeping) return;
     sweeping = true;
     try {
@@ -73,11 +89,8 @@ async function main() {
       sweeping = false;
     }
   }, 10000);
-
-  server.listen(config.port, () => console.log(`QueueFlow API listening on http://localhost:${config.port}`));
 }
 
 main().catch((err) => {
   console.error('Failed to start:', err.message);
-  process.exit(1);
 });
