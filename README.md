@@ -92,3 +92,32 @@ Admin: `/api/admin/{overview|users}`, service and counter CRUD.
 
 ## Ideas to extend
 SMS/WhatsApp alerts when a token is near, camera QR scanning at the entrance, appointment slots, multilingual UI, per-counter skills (for example loans vs deposits).
+
+## Deploy to Render
+
+QueueFlow is configured to deploy as a unified fullstack web service on Render (handling API, WebSockets, and static client files from a single service).
+
+### Option 1: Render Blueprint (Recommended)
+1. Push this repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com), click **New +** > **Blueprint**.
+3. Connect your GitHub repository. Render reads `render.yaml` automatically.
+4. Provide your `MONGODB_URI` (from [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)).
+5. Click **Apply**.
+
+### Option 2: Manual Web Service Setup
+1. In Render Dashboard, click **New +** > **Web Service**.
+2. Connect your GitHub repository.
+3. Configure the following settings:
+   - **Environment**: `Node`
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/api/health`
+4. Add the following **Environment Variables**:
+   - `NODE_VERSION`: `22.14.0`
+   - `PORT`: `10000`
+   - `MONGODB_URI`: `<Your MongoDB Atlas connection string>`
+   - `JWT_SECRET`: `<A long random secure string>`
+   - `TIMEZONE`: `Asia/Kolkata` (or your local IANA timezone)
+   - `CLIENT_ORIGIN`: `*`
+5. Click **Create Web Service**.
+
